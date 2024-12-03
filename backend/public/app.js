@@ -9,13 +9,18 @@ if (registerForm) {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, email, password }),
-    });
-    const data = await response.json();
-    document.getElementById("message").textContent = data.message || data.error;
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, email, password }),
+      });
+      const data = await response.json();
+      document.getElementById("message").textContent =
+        data.message || data.error;
+    } catch (err) {
+      console.error("Error during registration:", err);
+    }
   });
 }
 
@@ -27,17 +32,21 @@ if (loginForm) {
     const email = document.getElementById("email").value;
     const password = document.getElementById("password").value;
 
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-    const data = await response.json();
-    if (data.token) {
-      localStorage.setItem("token", data.token);
-      window.location.href = "tasks.html";
-    } else {
-      document.getElementById("message").textContent = data.error;
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await response.json();
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+        window.location.href = "tasks.html";
+      } else {
+        document.getElementById("message").textContent = data.error;
+      }
+    } catch (err) {
+      console.error("Error during login:", err);
     }
   });
 }
@@ -50,13 +59,14 @@ if (taskForm) {
 
   // Load tasks
   const loadTasks = async () => {
-    const response = await fetch(`${API_BASE_URL}/tasks`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const tasks = await response.json();
-    taskList.innerHTML = tasks
-      .map(
-        (task) => `
+    try {
+      const response = await fetch(`${API_BASE_URL}/tasks`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const tasks = await response.json();
+      taskList.innerHTML = tasks
+        .map(
+          (task) => `
             <li>
                 <strong>${task.title}</strong> - ${task.priority}
                 <p>${task.description}</p>
@@ -66,8 +76,11 @@ if (taskForm) {
                 <button onclick="deleteTask('${task._id}')">Delete</button>
             </li>
         `
-      )
-      .join("");
+        )
+        .join("");
+    } catch (err) {
+      console.error("Error loading tasks:", err);
+    }
   };
 
   loadTasks();
@@ -80,25 +93,38 @@ if (taskForm) {
     const deadline = document.getElementById("deadline").value;
     const priority = document.getElementById("priority").value;
 
-    await fetch(`${API_BASE_URL}/tasks`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ title, description, deadline, priority }),
-    });
+    try {
+      const response = await fetch(`${API_BASE_URL}/tasks`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ title, description, deadline, priority }),
+      });
 
-    loadTasks();
-    taskForm.reset();
+      if (response.ok) {
+        loadTasks();
+        taskForm.reset();
+      }
+    } catch (err) {
+      console.error("Error adding task:", err);
+    }
   });
 
   // Delete task
   window.deleteTask = async (id) => {
-    await fetch(`${API_BASE_URL}/tasks/${id}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    loadTasks();
+    try {
+      const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        loadTasks();
+      }
+    } catch (err) {
+      console.error("Error deleting task:", err);
+    }
   };
 }
